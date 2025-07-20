@@ -47,7 +47,16 @@ You can find the OPEN API docs at: http://localhost:8000/docs
   {"recommendation_id":"f57f3f14-ea74-4512-a0f9-fc982ae5d051","patient_id":4,"recommendation":"Post-Op Rehabilitation Plan","timestamp":"2025-07-20T14:48:36.748036"}
 
 # Automated Tests
-In this project there are some simple automated tests to ensure the basic functionality, to run the you have to get in container:
+In this project there are some simple automated tests to ensure the basic functionality.
+
+Thee are 3 automated test:
+
+- test_login_and_evaluate: Tests the authentication and then the /evaluate endpoint
+- test_invalid_token: Tests the response we get when having an invalid token
+- test_recommendation_by_id: Tests the get recommendation by ID
+
+
+To run the you have to get in container:
 
 docker exec -it sword-health-api-chalenge-api-1 bash
 
