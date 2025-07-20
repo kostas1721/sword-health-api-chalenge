@@ -1,0 +1,229 @@
+Endpoint Tests:
+    Authorization:
+        Request:
+        curl -X POST "http://localhost:8000/login" \
+            -H "Content-Type: application/json" \
+            -d '{"username": "admin", "password": "password"}'
+        Response:
+        {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAzMDEzMn0.JFav9baPvrCqRLCxTnBp8u1HQrLGibpeh8m-hQtwZBY"}%
+
+    Evaluate:
+        Request:
+        curl -X POST "http://localhost:8000/evaluate" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAzMDEzMn0.JFav9baPvrCqRLCxTnBp8u1HQrLGibpeh8m-hQtwZBY" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "patient_id": 24,
+                "age": 44,
+                "bmi": 18,
+                "has_chronic_pain": false,
+                "recent_surgery": true
+            }'
+        Response:
+        {"recommendation_id":"50a5b58a-b4ac-4908-83ea-6a66bef2f3aa","patient_id":24,"recommendation":"Post-Op Rehabilitation Plan","timestamp":"2025-07-20T15:49:19.601402"}%
+
+    Recommendation by ID:
+        Request:
+        curl -X GET "http://localhost:8000/recommendation/f57f3f14-ea74-4512-a0f9-fc982ae5d051" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAyNDMxOX0.ypFSYh0xNNDFH-tL3A-1no4wJKgzzT6pv_K2JwDVrBI"
+        Response:
+        {"recommendation_id":"f57f3f14-ea74-4512-a0f9-fc982ae5d051","patient_id":4,"recommendation":"Post-Op Rehabilitation Plan","timestamp":"2025-07-20T14:48:36.748036"}%
+
+    Expired token Response:
+        {"detail":"Token expired"}%
+
+
+
+
+
+
+Concurrent requests test:
+Dependency:
+HTTPie
+
+Request:
+http POST http://localhost:8000/evaluate \
+patient_id:=1 age:=50 bmi:=25 has_chronic_pain:=false recent_surgery:=false \
+"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAyNTk3MH0.HKk-MYRbbJCf2dv28uyRynLYGgF9PpXX-YyUFDDNcfY" &
+
+http POST http://localhost:8000/evaluate \
+patient_id:=2 age:=51 bmi:=26 has_chronic_pain:=true recent_surgery:=false \
+"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAyNTk3MH0.HKk-MYRbbJCf2dv28uyRynLYGgF9PpXX-YyUFDDNcfY" &
+
+http POST http://localhost:8000/evaluate \
+patient_id:=3 age:=52 bmi:=27 has_chronic_pain:=false recent_surgery:=true \
+"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAyNTk3MH0.HKk-MYRbbJCf2dv28uyRynLYGgF9PpXX-YyUFDDNcfY" &
+
+http POST http://localhost:8000/evaluate \
+patient_id:=4 age:=52 bmi:=27 has_chronic_pain:=false recent_surgery:=true \
+"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAyNTk3MH0.HKk-MYRbbJCf2dv28uyRynLYGgF9PpXX-YyUFDDNcfY" &
+
+http POST http://localhost:8000/evaluate \
+patient_id:=7 age:=52 bmi:=27 has_chronic_pain:=false recent_surgery:=true \
+"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAyNTk3MH0.HKk-MYRbbJCf2dv28uyRynLYGgF9PpXX-YyUFDDNcfY" &
+
+wait
+
+Response:
+[1] 14609
+[2] 14610
+[3] 14611
+[4] 14612
+[5] 14613
+HTTP/1.1 200 OK
+content-length: 157
+content-type: application/json
+date: Sun, 20 Jul 2025 14:40:22 GMT
+server: uvicorn
+
+{
+    "patient_id": 2,
+    "recommendation": "General Wellness Plan",
+    "recommendation_id": "765a7219-8234-4004-b7c5-9ed9c230e456",
+    "timestamp": "2025-07-20T14:40:22.828014"
+}
+
+
+HTTP/1.1 200 OK
+content-length: 157
+content-type: application/json
+date: Sun, 20 Jul 2025 14:40:22 GMT
+server: uvicorn
+
+HTTP/1.1 200 OK
+content-length: 163
+content-type: application/json
+date: Sun, 20 Jul 2025 14:40:22 GMT
+server: uvicorn
+
+{
+    "patient_id": 1,
+    "recommendation": "General Wellness Plan",
+    "recommendation_id": "cd36b6bb-1899-4644-a0c6-99e9f4299bc2",
+    "timestamp": "2025-07-20T14:40:22.918864"
+}
+
+
+HTTP/1.1 200 OK
+content-length: 163
+content-type: application/json
+date: Sun, 20 Jul 2025 14:40:22 GMT
+server: uvicorn
+
+HTTP/1.1 200 OK
+content-length: 163
+content-type: application/json
+date: Sun, 20 Jul 2025 14:40:22 GMT
+server: uvicorn
+
+{
+    "patient_id": 3,
+    "recommendation": "Post-Op Rehabilitation Plan",
+    "recommendation_id": "c1cffe15-7e52-45c2-ac38-e023fbae59cb",
+    "timestamp": "2025-07-20T14:40:22.869251"
+}
+
+
+{
+    "patient_id": 7,
+    "recommendation": "Post-Op Rehabilitation Plan",
+    "recommendation_id": "7c5ef9fe-5afb-4aa3-8000-24e2026b6099",
+    "timestamp": "2025-07-20T14:40:22.853044"
+}
+
+
+{
+    "patient_id": 4,
+    "recommendation": "Post-Op Rehabilitation Plan",
+    "recommendation_id": "faf507d2-81d7-4dd1-9246-f4bf09e2b8ad",
+    "timestamp": "2025-07-20T14:40:22.842846"
+}
+
+
+[2]    done       http POST http://localhost:8000/evaluate patient_id:=2 age:=51 bmi:=26
+[3]    done       http POST http://localhost:8000/evaluate patient_id:=3 age:=52 bmi:=27
+[1]    done       http POST http://localhost:8000/evaluate patient_id:=1 age:=50 bmi:=25
+[4]  - done       http POST http://localhost:8000/evaluate patient_id:=4 age:=52 bmi:=27
+[5]  + done       http POST http://localhost:8000/evaluate patient_id:=7 age:=52 bmi:=27
+
+
+
+
+
+
+
+
+Redis Caching Validation:
+Send 2 Requests with the same information except patient ID
+(base) konstantinostsamis@MacBookAir sword-health-api-chalenge % curl -X POST "http://localhost:8000/login" \
+            -H "Content-Type: application/json" \
+            -d '{"username": "admin", "password": "password"}'
+{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAzMDEzMn0.JFav9baPvrCqRLCxTnBp8u1HQrLGibpeh8m-hQtwZBY"}%                                                                                                                                                                            (base) konstantinostsamis@MacBookAir sword-health-api-chalenge % curl -X POST "http://localhost:8000/evaluate" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAzMDEzMn0.JFav9baPvrCqRLCxTnBp8u1HQrLGibpeh8m-hQtwZBY" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "patient_id": 24,
+                "age": 44,
+                "bmi": 18,
+                "has_chronic_pain": false,
+                "recent_surgery": true
+            }'
+{"recommendation_id":"50a5b58a-b4ac-4908-83ea-6a66bef2f3aa","patient_id":24,"recommendation":"Post-Op Rehabilitation Plan","timestamp":"2025-07-20T15:49:19.601402"}%                                                                                                                                                       (base) konstantinostsamis@MacBookAir sword-health-api-chalenge % curl -X POST "http://localhost:8000/evaluate" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1MzAzMDEzMn0.JFav9baPvrCqRLCxTnBp8u1HQrLGibpeh8m-hQtwZBY" \
+            -H "Content-Type: application/json" \
+            -d '{
+                "patient_id": 25,
+                "age": 44,
+                "bmi": 18,
+                "has_chronic_pain": false,
+                "recent_surgery": true
+            }'
+{"recommendation_id":"50a5b58a-b4ac-4908-83ea-6a66bef2f3aa","patient_id":25,"recommendation":"Post-Op Rehabilitation Plan","timestamp":"2025-07-20T15:49:42.268113"}%
+The we can check the keys in the redis container, from inside the Redis container run:
+redis-cli
+KEYS *
+You should see something like this for our case:
+127.0.0.1:6379> KEYS *
+1) "recommendation:44:18.0:False:True"
+
+
+
+
+
+
+Testing to make sure Worker logs the recomendations to the DB:
+docker exec -it sword-health-api-chalenge-db-1 psql -U postgres -d recommendations
+select * from recommendations;
+You should see something like:
+          recommendation_id           | patient_id |       recommendation        |         timestamp
+--------------------------------------+------------+-----------------------------+----------------------------
+ 7e4edc6b-a05e-4f93-ac75-39e35e24d64f |          1 | Physical Therapy            | 2025-07-20 11:54:43.803159
+ 4fa44a84-da5a-4fad-85b9-afda051d45c4 |          1 | Physical Therapy            | 2025-07-20 11:58:39.027854
+ 47a1689e-7af9-436d-8fb2-8435581867c5 |          1 | Physical Therapy            | 2025-07-20 12:15:49.469803
+ 441e1446-5294-437c-906f-58cf9f748629 |          1 | Physical Therapy            | 2025-07-20 12:27:59.052112
+ 6af17f22-f67c-48f6-90bb-02e2b9719077 |          2 | Weight Management Program   | 2025-07-20 12:39:14.961901
+ dc5d80ad-e59a-42b6-878f-2802000a9129 |          2 | Weight Management Program   | 2025-07-20 13:18:05.442367
+ dff81398-7ca8-4ff4-81bb-fca2b5aa0e86 |          3 | Post-Op Rehabilitation Plan | 2025-07-20 13:29:28.869767
+ 33ddb9d6-651c-4029-b6f8-0bad25e6eb05 |          1 | Physical Therapy            | 2025-07-20 14:03:39.093931
+ 35be990d-b60a-42de-a1d2-190e0f3ba964 |          1 | Physical Therapy            | 2025-07-20 14:09:38.965861
+ deb94ab2-023c-4722-953c-acb268289343 |          3 | Post-Op Rehabilitation Plan | 2025-07-20 14:12:31.852372
+ a8fbdea0-b2db-4b5f-abc4-4e2e1c5e1b5d |          4 | Post-Op Rehabilitation Plan | 2025-07-20 14:17:23.670854
+ 4eca7a77-918a-4b94-a553-a23306e3c146 |          3 | Post-Op Rehabilitation Plan | 2025-07-20 14:17:34.078632
+ 45456798-d648-4205-b31c-a70a7d6884dd |          3 | Post-Op Rehabilitation Plan | 2025-07-20 14:25:53.164749
+ 0bf5f6f9-1579-4931-abd5-055bcf13bcd2 |          4 | Post-Op Rehabilitation Plan | 2025-07-20 14:32:38.393254
+ 765a7219-8234-4004-b7c5-9ed9c230e456 |          2 | General Wellness Plan       | 2025-07-20 14:40:22.828014
+ 7c5ef9fe-5afb-4aa3-8000-24e2026b6099 |          7 | Post-Op Rehabilitation Plan | 2025-07-20 14:40:22.853044
+ cd36b6bb-1899-4644-a0c6-99e9f4299bc2 |          1 | General Wellness Plan       | 2025-07-20 14:40:22.918864
+ faf507d2-81d7-4dd1-9246-f4bf09e2b8ad |          4 | Post-Op Rehabilitation Plan | 2025-07-20 14:40:22.842846
+ c1cffe15-7e52-45c2-ac38-e023fbae59cb |          3 | Post-Op Rehabilitation Plan | 2025-07-20 14:40:22.869251
+ f57f3f14-ea74-4512-a0f9-fc982ae5d051 |          4 | Post-Op Rehabilitation Plan | 2025-07-20 14:48:36.748036
+(20 rows)
+
+
+
+
+
+
+Automated Test:
+    Inside the docker cotainer run:
+    pytest -v tests/test_api.py
